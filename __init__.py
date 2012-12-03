@@ -4,11 +4,13 @@ class Field:
     def __init__(self, *args, **kwargs):
         self.meta = dict(*args, **kwargs)
 
+
 class ValidationError(Exception):
     def __init__(self, errors):
         Exception.__init__(self, errors)
 
         self.errors = errors
+
 
 class Document(object):
     FIELD_REQUIRED_MESSAGE = 'Field required'
@@ -52,7 +54,8 @@ class Document(object):
                     if not valid is True:
                         self.append_error(f, valid[1])
             if not isinstance(field, v.meta['type']) and field:
-                self.append_error(f, self.INVALID_FIELD_TYPE_MESSAGE % v.meta['type'].__name__)
+                self.append_error(f, self.INVALID_FIELD_TYPE_MESSAGE \
+                    % v.meta['type'].__name__)
         if self.errors:
             raise ValidationError(self.errors)
 
@@ -69,6 +72,7 @@ class Document(object):
 
 field = Field
 
+
 class Transaction(Document):
 
     description = field(type=str, required=True)
@@ -78,7 +82,7 @@ class Transaction(Document):
 a = Transaction()
 
 a.from_mongo({
-    'description' : 'teste',
+    'description': 'teste',
     'category': 'cat'
 })
 
