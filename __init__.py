@@ -1,4 +1,4 @@
-
+from bson import json_util
 
 class Field:
     def __init__(self, *args, **kwargs):
@@ -21,6 +21,10 @@ class Document(object):
         self.fields = {}
         self.required_fields = []
         self.field_validators = {}
+        
+        self.prepare_fields()
+
+    def prepare_fields(self):
         for attr in dir(self):
             attrv = getattr(self, attr)
             if isinstance(attrv, Field):
@@ -41,21 +45,30 @@ class Document(object):
             self.errors[field] = []
         self.errors[field].append(error)
 
+    def validate_required(self, f):
+        if f in self.required_fields:
+            if self.is_empty(field):
+                self.append_error(f, self.FIELD_REQUIRED_MESSAGE)
+
+    def validate_with_validators(self, f):
+        if f in self.field_validators.keys():
+            validators = self.field_validators[f]
+            for validator in validators:
+                valid = validator(field)
+                if not valid is True:
+                    self.append_error(f, valid[1])
+
+    def validate_type(self, field, v):
+        if not isinstance(field, v.meta['type']) and field:
+            self.append_error(f, self.INVALID_FIELD_TYPE_MESSAGE
+                              % v.meta['type'].__name__)
+
     def validate(self):
         for f, v in self.fields.items():
-            field = getattr(self, f)
-            if f in self.required_fields:
-                if self.is_empty(field):
-                    self.append_error(f, self.FIELD_REQUIRED_MESSAGE)
-            if f in self.field_validators.keys():
-                validators = self.field_validators[f]
-                for validator in validators:
-                    valid = validator(field)
-                    if not valid is True:
-                        self.append_error(f, valid[1])
-            if not isinstance(field, v.meta['type']) and field:
-                self.append_error(f, self.INVALID_FIELD_TYPE_MESSAGE \
-                    % v.meta['type'].__name__)
+            self.validate_required(f)
+            self.validate_with_validators(f)
+            self.validate_type(getattr(self, f), v)
+
         if self.errors:
             raise ValidationError(self.errors)
 
@@ -69,6 +82,12 @@ class Document(object):
     def from_mongo(self, data):
         for f in self.fields.keys():
             setattr(self, f, data[f])
+
+    def to_json(self):
+        return json_util.dumps(self.to_mongo())
+
+    def from_json(self, data):
+        self.from_mongo(json_util.loads(data))
 
 field = Field
 
@@ -91,4 +110,4 @@ try:
 except ValidationError as e:
     print e.errors
 
-print a.to_mongo()
+print a.to_json()
