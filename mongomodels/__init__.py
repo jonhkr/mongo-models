@@ -1,4 +1,5 @@
 from bson import json_util
+from bson.objectid import ObjectId
 from pymongo import MongoClient
 
 import gvars as g
@@ -62,8 +63,10 @@ class BaseDocument(object):
                 if not hasattr(self, '__collection__'):
                     self.__collection__ = self.__class__.__name__.lower()
                 self._collection = g.database[self.__collection__]
+
         def fset(self, value):
             self._collection = value
+
         def fdel(self):
             if hasattr(self, '_collection'):
                 del self._collection
@@ -75,16 +78,13 @@ class Document(BaseDocument):
     FIELD_REQUIRED_MESSAGE = 'Field required'
     INVALID_FIELD_TYPE_MESSAGE = 'Invalid field type, should be %s'
 
-    def __init__(self, doc={}):
+    def __init__(self):
         self.errors = {}
         self.fields = {}
         self.required_fields = []
         self.field_validators = {}
 
         self.prepare_fields()
-
-        if doc:
-            self.from_mongo(doc)
 
     def prepare_fields(self):
         for attr in dir(self):
@@ -144,6 +144,8 @@ class Document(BaseDocument):
         return mongodoc
 
     def from_mongo(self, data):
+        if not '_id' in self.fields.keys() and '_id' in data.keys():
+            self.fields['_id'] = Field(type=ObjectId)
         for f in self.fields.keys():
             setattr(self, f, data[f])
 
