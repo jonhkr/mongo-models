@@ -1,4 +1,36 @@
 from bson import json_util
+from pymongo import MongoClient
+
+import gvars as g
+
+
+class Connection(object):
+    def __init__(self, *args, **kwargs):
+        self.connection = MongoClient(*args, **kwargs)
+
+    def database():
+        def fget(self):
+            return g.database
+
+        def fset(self, value):
+            g.database = g.connection[value]
+
+        def fdel(self):
+            del g.database
+        return locals()
+    database = property(**database())
+
+    def connection():
+        def fget(self):
+            return g.connection
+
+        def fset(self, value):
+            g.connection = value
+
+        def fdel(self):
+            del g.connection
+        return locals()
+    connection = property(**connection())
 
 
 class Field:
@@ -13,17 +45,46 @@ class ValidationError(Exception):
         self.errors = errors
 
 
-class Document(object):
+class BaseDocument(object):
+
+    def _check_connection(self):
+        if g.connection is None:
+            raise RuntimeError('Connection not defined.')
+        if g.database is None:
+            raise RuntimeError('Database not defined.')
+
+    def collection():
+        def fget(self):
+            self._check_connection()
+            if hasattr(self, '_collection'):
+                return self._collection
+            else:
+                if not hasattr(self, '__collection__'):
+                    self.__collection__ = self.__class__.__name__.lower()
+                self._collection = g.database[self.__collection__]
+        def fset(self, value):
+            self._collection = value
+        def fdel(self):
+            if hasattr(self, '_collection'):
+                del self._collection
+        return locals()
+    collection = property(**collection())
+
+
+class Document(BaseDocument):
     FIELD_REQUIRED_MESSAGE = 'Field required'
     INVALID_FIELD_TYPE_MESSAGE = 'Invalid field type, should be %s'
 
-    def __init__(self):
+    def __init__(self, doc={}):
         self.errors = {}
         self.fields = {}
         self.required_fields = []
         self.field_validators = {}
 
         self.prepare_fields()
+
+        if doc:
+            self.from_mongo(doc)
 
     def prepare_fields(self):
         for attr in dir(self):
@@ -91,5 +152,10 @@ class Document(object):
 
     def from_json(self, data):
         self.from_mongo(json_util.loads(data))
+
+    def save(self, manipulate=True, safe=None,
+             check_keys=True, **kwargs):
+        return self.collection.save(self.to_mongo(), manipulate,
+                                    safe, check_keys, **kwargs)
 
 __all__ = ['Document', 'Field', 'ValidationError']

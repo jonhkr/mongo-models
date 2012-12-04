@@ -11,6 +11,8 @@ def email_validator(email):
 
 class User(Document):
 
+    __collection__ = 'user'
+
     id = field(type=ObjectId)
     firstname = field(type=basestring, required=True)
     lastname = field(type=basestring, required=True)
@@ -34,6 +36,8 @@ u.lastname = 'Pereira'
 u.email = 'joao@example.com'
 u.login = 'jp'
 u.passwd = 'passwd'
+
+u.save()
 
 a = Transaction()
 a.uid = u.id
