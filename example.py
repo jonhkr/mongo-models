@@ -13,20 +13,18 @@ class User(Document):
 
     __collection__ = 'user'
 
-    id = field(type=ObjectId)
-    firstname = field(type=basestring, required=True)
-    lastname = field(type=basestring, required=True)
-    email = field(type=basestring, validators=[email_validator])
-    login = field(type=basestring, required=True)
-    passwd = field(type=basestring, required=True)
+    firstname = field(required=True)
+    lastname = field(required=True)
+    email = field(validators=[email_validator])
+    login = field(required=True)
+    passwd = field(required=True)
 
 
 class Transaction(Document):
 
-    id = field(type=ObjectId)
-    uid = field(type=ObjectId, required=True)
-    description = field(type=basestring, required=True)
-    category = field(type=basestring, required=True)
+    uid = field(required=True)
+    description = field(required=True)
+    category = field(required=True)
 
 
 u = User()
@@ -35,9 +33,7 @@ u.firstname = 'Joao'
 u.lastname = 'Pereira'
 u.email = 'joao@example.com'
 u.login = 'jp'
-u.passwd = 'passwd'
-
-u.save()
+u.passwd = 't'
 
 a = Transaction()
 a.uid = u.id
