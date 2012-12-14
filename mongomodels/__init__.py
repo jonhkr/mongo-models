@@ -43,7 +43,7 @@ class Document(object):
         for f in self.fields.keys():
             obj = data[f]
             if f in self.embed_fields:
-                obj = self.fields[f].cls()
+                obj = self.fields[f].type()
                 obj.from_mongo(data[f])
             setattr(self, f, obj)
 
